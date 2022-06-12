@@ -10,6 +10,8 @@
 #        (https://machinelearningspace.com/object-tracking-python/)
 # | (*) An Elementary Introduction to Kalman Filtering 
 #        (https://arxiv.org/pdf/1710.04055)
+# | (**) Kalman Filter - VISUALLY EXPLAINED
+#        (https://youtu.be/-DiZGpAh7T4)
 # Author := mason (orig. code @ https://github.com/cbecker/kalman_python_cpp)
 
 import numpy as np
