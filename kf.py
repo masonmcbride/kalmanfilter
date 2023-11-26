@@ -16,80 +16,59 @@
 
 import numpy as np
 
-# offsets of each variable in state vector
-iX = 0
-iV = 1
-NUMVARS = 2 * iV
-
-
 class KF:
-    def __init__(self,  initial_x: float, 
-                        initial_v: float, 
+    def __init__(self,  X: np.matrix,
+                        H: np.matrix,
+                        A: np.matrix,
+                        B: np.matrix,
+                        Q: np.matrix,
                         dt: float,
                         std_a: float,
-                        std_z: float) -> None:
+                        std_z: float):
 
-        # state variable, contains [position, velocity]
-        self.X = np.zeros((NUMVARS, 1))
+        # (N)umber of state variables
+        self.N = len(X)
 
-        # initialize state
-        self.X[iX] = initial_x
-        self.X[iV] = initial_v
-
-        # initialize H matrix, this varies for each problem statement
-        self.H = np.zeros((1, NUMVARS))
-        self.H[0, iX] = 1
-        # this is [1 0] bc only position is observed
-
-        # Initialie covariance matrix 
-        self.P = np.eye(NUMVARS)
+        #NOTE these matrices vary for each problem statement, and should be provided
+        self.X = X # State matrix/array
+        self.H = H # Transformation Matrix
+        self.A = A # State transition matrix (state)
+        self.B = B # State transition matrix (action)
+        self.Q = Q # Process noise covariance matrix
+        self.P = np.eye(self.N) # Covariance matrix
         
         # hyperparams 
         self.dt = dt
         self.std_a = std_a # system disturbance variance
-        self.std_z = std_z # sensor variance
+        self.std_z = std_z # sensor measurement variance
 
+    def predict(self, u: np.ndarray) -> None:
+        """Predict next state given current state self.X and action u"""
+        A, B, X, P, Q = self.A, self.B, self.X, self.P, self.Q
 
-    # BEGIN main funtionality
-
-    def predict(self) -> None:
-        # x = Ax [+ Bu]  -- this is missing an action nterm
-        A = np.eye(NUMVARS)
-        A[iX, iV] = self.dt
-        new_X = A.dot(self.X)
-
-        # P = A P A.T + G G.T * std_a
-        G = np.zeros((NUMVARS, 1))
-        G[iX], G[iV] = 0.5 * self.dt**2, self.dt
-        new_P = A.dot(self.P).dot(A.T) + G.dot(G.T) * self.std_a
+        new_X = A @ X + B @ u # x = Ax + Bu
+        new_P = A @ P @ A.T + Q # P = A P A.T + Q
 
         self.X = new_X
         self.P = new_P
 
     def update(self, z: np.ndarray) -> None:
-        # S = H P Ht + std_z
-        # K = P Ht S^-1
+        """Update KF given measurement z"""
+        H, P, X, I = self.H, self.P, self.X, np.eye(self.N)
 
-        # define S to be the inverse part of Kalman Gain expr
-        S = self.H.dot(self.P).dot(self.H.T) + self.std_z
-        # calculate Kalman Gain K 
-        K = self.P.dot(self.H.T).dot(np.linalg.inv(S))
-
-        # innovation = z - H x
-        # x = x + K innovation
-        # P = (I - K H) * P 
+        # Kalman Gain K 
+        S = H @ P @ H.T + self.std_z # S = H P Ht + std_z
+        K = P @ H.T @ np.linalg.inv(S) # K = P Ht S^-1
         
-        # calculate innovation
-        innovation = z - self.H.dot(self.X)
+        # innovation
+        innovation = z - H @ X
 
         # apply Kalman Gain and innovation to update prediction
-        new_X = self.X + K.dot(innovation)
-        new_P = (np.eye(NUMVARS) - K.dot(self.H)).dot(self.P)
+        new_X = X + K @ innovation # x = x + K innovation
+        new_P = (I - K @ H) @ P # P = (I - K H) * P 
 
         self.X = new_X
         self.P = new_P
-
-    # END main functionality
 
     @property
     def state(self) -> np.array:
@@ -98,11 +77,3 @@ class KF:
     @property
     def cov(self) -> np.array: 
         return self.P
-
-    @property
-    def pos(self) -> float:
-        return self.X[iX]
-
-    @property 
-    def vel(self) -> float:
-        return self.X[iV]

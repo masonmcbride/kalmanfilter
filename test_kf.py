@@ -1,8 +1,9 @@
-import unittest
+import pytest
 from kf import KF
 import numpy as np
 
 DT = 0.1
+#TODO test 1-D KF and 2-D KF problem statements
 
 class TestKF(unittest.TestCase):
     def test_can_construct_with_x_and_v(self):
