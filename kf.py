@@ -36,7 +36,7 @@ class KF:
         self.B = B # State transition matrix (action)
         self.Q = Q # Process noise covariance matrix
         self.P = np.eye(self.N) # Covariance matrix
-        
+ 
         # hyperparams 
         self.dt = dt
         self.std_a = std_a # system disturbance variance
@@ -46,8 +46,8 @@ class KF:
         """Predict next state given current state self.X and action u"""
         A, B, X, P, Q = self.A, self.B, self.X, self.P, self.Q
 
-        new_X = A @ X + B @ u # x = Ax + Bu
-        new_P = A @ P @ A.T + Q # P = A P A.T + Q
+        new_X = A @ X + B @ u # x = A x + B u
+        new_P = A @ P @ A.T + Q # P = A P A^T + Q
 
         self.X = new_X
         self.P = new_P
@@ -57,15 +57,15 @@ class KF:
         H, P, X, I = self.H, self.P, self.X, np.eye(self.N)
 
         # Kalman Gain K 
-        S = H @ P @ H.T + self.std_z # S = H P Ht + std_z
-        K = P @ H.T @ np.linalg.inv(S) # K = P Ht S^-1
-        
+        S = H @ P @ H.T + self.std_z # S = H P H^T + std_z
+        K = P @ H.T @ np.linalg.inv(S) # K = P H^T S^-1
+
         # innovation
         innovation = z - H @ X
 
         # apply Kalman Gain and innovation to update prediction
         new_X = X + K @ innovation # x = x + K innovation
-        new_P = (I - K @ H) @ P # P = (I - K H) * P 
+        new_P = (I - K @ H) @ P # P = (I - K H) P 
 
         self.X = new_X
         self.P = new_P
@@ -73,7 +73,7 @@ class KF:
     @property
     def state(self) -> np.array:
         return self.X
-    
+ 
     @property
     def cov(self) -> np.array: 
         return self.P
